@@ -74,7 +74,7 @@ class PlayState extends FlxState
 		
 
 		_player = new Player(playerpos.x, playerpos.y, _map);
-		_enemy = new Enemy(playerpos.x + 150, playerpos.y, _map, _player); 
+		_enemy = new Enemy(playerpos.x + 150, playerpos.y+100, _map, _player); 
 		
 		//SIMPLE CAMERA A MODIFIER POUR LA RENDRE BIEN COOL
 		this.camera.follow(_player, SCREEN_BY_SCREEN, 0.2);

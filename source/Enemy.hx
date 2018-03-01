@@ -26,6 +26,8 @@ class Enemy extends FlxSprite
 	
 	
 	//IA var
+	
+	public var _lastPlayerPositionKnown:FlxPoint;
 	public var _distanceToPlayer:Int;
 	
 	public var checkWallRay:Bool;
@@ -59,8 +61,13 @@ class Enemy extends FlxSprite
 		.add(Chase,EnemyIdle, EnemyConditions.idle)
 		.start(EnemyIdle);
 		
+		//AI INIT
+		_lastPlayerPositionKnown = new FlxPoint();
+		
 		//RAYCAST SECTION 
 		checkWallRay = true;
+		
+		
 		
 	}
 	
@@ -101,6 +108,7 @@ class Enemy extends FlxSprite
 		if (_distanceToPlayer <= 100 &&  _map.ray(new FlxPoint(this.x,this.y), _player.getMidpoint()) && !_player.is_bathing )
 		{
 			seePlayer = true;
+			_lastPlayerPositionKnown = _player.getPosition();
 		}
 		else
 		{
@@ -137,12 +145,39 @@ class EnemyIdle extends FlxFSMState<Enemy>
 	
 	override public function update(elapsed:Float,owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
-		//trace("ENNEMY IDLE");
+		//CREER UN STATE ALERT
+		var dir = owner.x - owner._lastPlayerPositionKnown.x;
+		
+		if (owner._lastPlayerPositionKnown != new FlxPoint(0, 0) && FlxMath.absInt(Std.int(dir)) != 0 )
+		{
+			//tentative de saut
+			if (!owner.checkWallRay && (owner.y - owner._lastPlayerPositionKnown.y > 0))
+			{
+				owner.velocity.y =- 150; 
+			}
+			
+			if (dir < 0)
+			{
+				owner.velocity.x = 20;
+				owner.facing = FlxObject.RIGHT;
+			}
+			else
+			{
+				owner.velocity.x = -20;
+				owner.facing = FlxObject.LEFT;
+			}
+		}
 	}
 	
 	override public function exit(owner: Enemy):Void
 	{
 	}
+	
+	public function goTo():Void
+	{
+		
+	}
+	
 	
 }
 
