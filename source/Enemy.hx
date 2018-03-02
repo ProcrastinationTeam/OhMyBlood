@@ -62,6 +62,8 @@ class Enemy extends FlxSprite
 		
 		this.animation.add("idle", [0]);
 		this.animation.add("walk", [0, 1], 6, true);
+		this.animation.add("dieStart", [0,2,3,4,4,4,4,4], 6,false);
+		this.animation.add("dieEnd", [5,5,5,6], 6,false);
 		this.animation.play("idle");
 		
 		
@@ -275,21 +277,28 @@ class Chase extends FlxFSMState<Enemy>
 
 class EnemyDead extends FlxFSMState<Enemy>
 {
+	var count = 0;
 	override public function enter(owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
 		trace("I'm DEAD");	
+		owner.animation.play("dieStart");
 		owner.allowCollisions = FlxObject.NONE;
 		owner.velocity.x  = 0;
 		owner.velocity.y  = 0;
 		owner.acceleration.x = 0;
 		owner.acceleration.y = 0;
 		owner._particleEmitter.setPosition(owner.x + owner.width / 2, owner.y + 3 );
-		owner._particleEmitter.start(false, 0.01);
+		owner._particleEmitter.start(false, 0.01,150);
 	}
 	
 	override public function update(elapsed:Float,owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
-		 
+		if (owner.animation.finished && count == 0)
+		{
+			owner.animation.play("dieEnd");
+			count++;
+		}
+
 	}
 	
 	override public function exit(owner: Enemy):Void
