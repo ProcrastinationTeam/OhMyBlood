@@ -64,6 +64,8 @@ class PlayState extends FlxState
 	private var _camera : FlxCamera;
 	//private var _camera : FlxCameraFollowStyle;
 	
+	private var _slainableEnemies : Array<Enemy>;
+	
 	override public function create():Void
 	{
 		super.create();
@@ -104,6 +106,8 @@ class PlayState extends FlxState
 		_enemyList = new FlxTypedGroup<Enemy>();
 		_enemy = new Enemy(playerpos.x + 150, playerpos.y + 150, _map, _player); 
 		_enemyList.add(_enemy);
+		var _enemy2 = new Enemy(playerpos.x + 250, playerpos.y + 150, _map, _player); 
+		_enemyList.add(_enemy2);
 		
 		
 		
@@ -129,6 +133,7 @@ class PlayState extends FlxState
 		add(_txtInfo);
 		add(_editModeTxt);
 		
+		_slainableEnemies = [];
 	}
 
 	override public function update(elapsed:Float):Void
@@ -185,34 +190,62 @@ class PlayState extends FlxState
 		FlxG.collide(_player, _map);
 		FlxG.collide(_enemyList, _map);
 		
-		if (_player.is_bathing)
-		{
-			if (!FlxG.overlap(_player, _enemyList, CanSlain))
+		//if (_player.is_bathing)
+		//{
+			//if (!FlxG.overlap(_player, _enemyList, CanSlain))
+			//{
+				//_actionText.visible = false;	
+			//}
+			//else
+			//{
+				//trace("OVERLAP");
+			//}
+		//}
+		
+		_slainableEnemies = [];
+		
+		if (_player.is_bathing) {
+			if (!FlxG.overlap(_player, _enemyList, EnemySlainable))
 			{
-				_actionText.visible = false;	
+				_actionText.visible = false;
 			}
 			else
 			{
 				trace("OVERLAP");
 			}
 		}
-	
-
+		
+		if (FlxG.keys.justPressed.E) {
+			for (enemy in _slainableEnemies) {
+				add(enemy._particleEmitter);
+				enemy.kill();	
+			}
+		}
+		
 		super.update(elapsed);
 	}
 	
+	////CALLBACK OVERLAP CONTIENT UN INPUT A MODIFIER 
+	//public function CanSlain(owner:Player,enemy:Enemy)
+	//{
+		//_actionText.setPosition(enemy.x-10, enemy.y - 15);
+		//_actionText.visible = true;
+		//
+		////SLAIN ENEMY
+		//if (FlxG.keys.justPressed.E)
+		//{
+			//add(enemy._particleEmitter);
+			//enemy.kill();	
+		//}
+	//}
+	
 	//CALLBACK OVERLAP CONTIENT UN INPUT A MODIFIER 
-	public function CanSlain(owner:Player,enemy:Enemy)
+	public function EnemySlainable(owner:Player,enemy:Enemy)
 	{
 		_actionText.setPosition(enemy.x-10, enemy.y - 15);
 		_actionText.visible = true;
 		
-		//SLAIN ENEMY
-		if (FlxG.keys.justPressed.E)
-		{
-			add(enemy._particleEmitter);
-			enemy.kill();	
-		}
+		_slainableEnemies.push(enemy);
 	}
 	
 	
