@@ -3,11 +3,14 @@ package;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.addons.util.FlxFSM;
+import flixel.effects.particles.FlxEmitter;
+import flixel.effects.particles.FlxParticle;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.math.FlxVelocity;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.tile.FlxTilemap;
+import flixel.util.FlxColor;
 
 /**
  * ...
@@ -33,12 +36,19 @@ class Enemy extends FlxSprite
 	public var checkWallRay:Bool;
 	
 	
+	//PARTICLE SYSTEM
+	public var _particleEmitter:FlxEmitter;
+	
+	
 	
 	public function new(?X:Float=0, ?Y:Float=0, map:FlxTilemap, player:Player) 
 	{
+		//BASIC INIT
 		super(X, Y);
 		_map = map;
 		_player = player;
+		
+		//GRAPHICS INIT
 		this.loadGraphic("assets/images/enemy.png", true, 16, 16, false);
 		
 		this.setFacingFlip(FlxObject.RIGHT, false, false);
@@ -49,12 +59,14 @@ class Enemy extends FlxSprite
 		this.animation.add("walk", [0, 1], 6, true);
 		this.animation.play("idle");
 		
+		
+		//PHYSICS INIT
 		this.setSize(8, 16);
 		this.offset.set(4, 0);
 		acceleration.y = 500;
 		this.maxVelocity.set(150, 500);
 		
-		
+		//FSM INIT
 		fsm = new FlxFSM<Enemy>(this);
 		fsm.transitions
 		.add(EnemyIdle, Chase, EnemyConditions.see)
@@ -64,10 +76,13 @@ class Enemy extends FlxSprite
 		//AI INIT
 		_lastPlayerPositionKnown = new FlxPoint();
 		_nullPosition = new FlxPoint();
+		
 		//RAYCAST SECTION 
 		checkWallRay = true;
 		
-		
+		//PARTICLE INIT
+		_particleEmitter = new FlxEmitter(this.x, this.y + this.width / 2);
+		_particleEmitter.makeParticles(2, 2, FlxColor.RED, 50);
 		
 	}
 	
@@ -96,6 +111,13 @@ class Enemy extends FlxSprite
 		fsm.destroy();
 		fsm = null;
 		super.destroy();
+	}
+	
+	
+	override public function kill():Void
+	{
+		alive = false;
+		exists = false;
 	}
 	
 	private function checkEnemyVision()

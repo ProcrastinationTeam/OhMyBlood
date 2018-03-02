@@ -180,11 +180,7 @@ class PlayState extends FlxState
 			FlxG.resetState();
 		}
 		
-		
-		
 		//OVERLAP AND COLLIDE
-		
-			
 		FlxG.collide(_player, _map);
 		FlxG.collide(_enemyList, _map);
 		
@@ -199,15 +195,12 @@ class PlayState extends FlxState
 				trace("OVERLAP");
 			}
 		}
-		
-		
-		
-		
-		
+	
+
 		super.update(elapsed);
 	}
 	
-	//CALLBACK OVERLAP 
+	//CALLBACK OVERLAP CONTIENT UN INPUT A MODIFIER 
 	public function CanSlain(owner:Player,enemy:Enemy)
 	{
 		_actionText.setPosition(enemy.x-10, enemy.y - 15);
@@ -216,9 +209,9 @@ class PlayState extends FlxState
 		//SLAIN ENEMY
 		if (FlxG.keys.justPressed.E)
 		{
+			add(enemy._particleEmitter);
 			enemy.kill();	
 		}
-		
 	}
 	
 	
