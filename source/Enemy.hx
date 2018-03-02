@@ -21,12 +21,16 @@ class Enemy extends FlxSprite
 	//FSM
 	public var fsm:FlxFSM<Enemy>;
 
+	
+	
+	//TILEMAP
 	public var _map:FlxTilemap;
 	
+	
+	//USEFULL
 	public var _player:Player;
-	
 	public var seePlayer:Bool = false;
-	
+	public var _health:Int = 100;
 	
 	//IA var
 	public var _nullPosition : FlxPoint;
@@ -70,7 +74,9 @@ class Enemy extends FlxSprite
 		fsm = new FlxFSM<Enemy>(this);
 		fsm.transitions
 		.add(EnemyIdle, Chase, EnemyConditions.see)
-		.add(Chase,EnemyIdle, EnemyConditions.idle)
+		.add(Chase, EnemyIdle, EnemyConditions.idle)
+		.add(EnemyIdle, EnemyDead, EnemyConditions.dead)
+		.add(Chase, EnemyDead, EnemyConditions.dead)
 		.start(EnemyIdle);
 		
 		//AI INIT
@@ -82,7 +88,15 @@ class Enemy extends FlxSprite
 		
 		//PARTICLE INIT
 		_particleEmitter = new FlxEmitter(this.x, this.y + this.width / 2);
-		_particleEmitter.makeParticles(2, 2, FlxColor.RED, 50);
+		_particleEmitter.makeParticles(1, 1, FlxColor.RED,1500);
+		_particleEmitter.launchMode = FlxEmitterMode.CIRCLE;
+		_particleEmitter.launchAngle.set( 0, -70);
+		_particleEmitter.acceleration.start.min.y = 100;
+		_particleEmitter.acceleration.start.max.y = 200;
+		_particleEmitter.acceleration.end.min.y = 100;
+		_particleEmitter.acceleration.end.max.y = 200;
+		_particleEmitter.solid = true;
+		
 		
 	}
 	
@@ -116,8 +130,11 @@ class Enemy extends FlxSprite
 	
 	override public function kill():Void
 	{
-		alive = false;
-		exists = false;
+		//fsm = null;
+		_health = 0;
+		
+		//alive = false;
+		//exists = false;
 	}
 	
 	private function checkEnemyVision()
@@ -153,6 +170,11 @@ class EnemyConditions
 	public static function see(Owner:Enemy)
 	{
 		return(Owner.seePlayer);
+	}
+	
+	public static function dead(Owner:Enemy)
+	{
+		return(Owner._health <= 0);
 	}
 	
 }
@@ -195,10 +217,7 @@ class EnemyIdle extends FlxFSMState<Enemy>
 	{
 	}
 	
-	public function goTo():Void
-	{
-		
-	}
+
 	
 	
 }
@@ -216,6 +235,7 @@ class Chase extends FlxFSMState<Enemy>
 		//trace("ENNEMY CHASE");
 		if (owner._distanceToPlayer <= 100  && owner._distanceToPlayer > 10)
 		{
+			owner.animation.play("walk");
 			//tentative de saut
 			if (!owner.checkWallRay && (owner.y - owner._player.y > 0))
 			{
@@ -239,6 +259,7 @@ class Chase extends FlxFSMState<Enemy>
 		else if (owner._distanceToPlayer <= 10)
 		{
 			//Attack
+			owner.animation.play("idle");
 			trace("Launch attack");
 			owner.velocity.x = 0;
 		}
@@ -248,5 +269,30 @@ class Chase extends FlxFSMState<Enemy>
 	override public function exit(owner: Enemy):Void
 	{
 		owner.velocity.x = 0;
+	}
+}
+
+class EnemyDead extends FlxFSMState<Enemy>
+{
+	override public function enter(owner: Enemy, fsm:FlxFSM<Enemy>):Void
+	{
+		trace("I'm DEAD");	
+		owner.allowCollisions = FlxObject.NONE;
+		owner.velocity.x  = 0;
+		owner.velocity.y  = 0;
+		owner.acceleration.x = 0;
+		owner.acceleration.y = 0;
+		owner._particleEmitter.setPosition(owner.x + owner.width / 2, owner.y + 3 );
+		owner._particleEmitter.start(false, 0.01);
+	}
+	
+	override public function update(elapsed:Float,owner: Enemy, fsm:FlxFSM<Enemy>):Void
+	{
+		 
+	}
+	
+	override public function exit(owner: Enemy):Void
+	{
+		
 	}
 }
