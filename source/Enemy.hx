@@ -11,6 +11,7 @@ import flixel.math.FlxVelocity;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
+import player.Player;
 
 /**
  * ...
