@@ -13,6 +13,7 @@ import flixel.tile.FlxTile;
 import flixel.tile.FlxTileblock;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
+import player.Player;
 using flixel.util.FlxSpriteUtil;
 using StringTools;
 
