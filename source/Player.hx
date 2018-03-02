@@ -3,6 +3,7 @@ package;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
+import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxPoint;
 import flixel.addons.util.FlxFSM;
 import flixel.input.keyboard.FlxKey;
@@ -11,7 +12,6 @@ import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.text.FlxText;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
-import source.Pew;
 using flixel.util.FlxSpriteUtil;
 
 /**
@@ -20,7 +20,7 @@ using flixel.util.FlxSpriteUtil;
  */
 class Player extends FlxSprite 
 {
-	//LE FSM
+	//FSM
 	public var fsm:FlxFSM<Player>;
 	
 	public static inline var DashVelocity = 200;
@@ -39,9 +39,19 @@ class Player extends FlxSprite
 	var jumping 		: Bool = false;
 	var doubleJumped 	: Bool = false;
 	
-	
 	private var _maxVel: Int = 200;
 
+	
+	//ENEMY RECOGNITION & INTERACTION //A REMOVE
+	//public var _enemyList:FlxTypedGroup<Enemy>;
+	
+	
+	//UI AND TEXT
+	
+	
+	///TILE DETECTION
+	public var currentLeftTile: Int;
+	public var currentRightTile: Int;
 	
 	//RAYCAST
 	public var sideHighRay:Bool;
@@ -58,11 +68,6 @@ class Player extends FlxSprite
 
 	public var upLeftRayImpact : FlxPoint;
 	public var upRightRayImpact : FlxPoint;
-	
-	///TILE DETECTION
-	public var currentLeftTile: Int;
-	public var currentRightTile: Int;
-	
 	
 	//FACE UP
 	private var startUpRightRayPoint : FlxPoint;
@@ -92,6 +97,8 @@ class Player extends FlxSprite
 	public var lastButtonPressed : FlxKey;
 	public var lastButtonDebug : FlxText;
 	
+	
+	//DEBUG UI
 	public var canvas:FlxSprite;
 	public var canvas2:FlxSprite;
 	public var canvas3:FlxSprite;
@@ -103,6 +110,7 @@ class Player extends FlxSprite
 	{
 		super(X, Y);
 		_map = map;
+		
 		
 		//RAYCAST USEFULL
 		canvas = new FlxSprite();
@@ -208,6 +216,7 @@ class Player extends FlxSprite
 			.add(BloodBathFinish, Walk, Conditions.animationFinished)
 			
 			.start(Walk);
+				
 	}
 	
 	override public function update(elapsed:Float):Void
@@ -457,7 +466,7 @@ class BloodBath extends FlxFSMState<Player>
 		owner.is_bathing = true;
 		owner.acceleration.y = 0;
 		owner.acceleration.x = 0;
-		//owner.allowCollisions = FlxObject.NONE;
+		owner.allowCollisions = FlxObject.NONE;
 		owner.setSize(8, 4);
 		owner.offset.set(4, 12);
 		owner.setPosition(owner.getPosition().x, owner.getPosition().y + 12);
@@ -470,16 +479,6 @@ class BloodBath extends FlxFSMState<Player>
 		owner.velocity.y = 0;
 		if (owner.animation.finished)
 		{
-			
-			
-			//if (FlxG.keys.pressed.UP)
-			//{
-				//owner.velocity.y = -50;
-			//}
-			//else if (FlxG.keys.pressed.DOWN)
-			//{
-				//owner.velocity.y = 50;
-			//}
 			
 			if(owner.currentLeftTile != 2 || owner.downLeftRay)
 			{
@@ -510,6 +509,8 @@ class BloodBath extends FlxFSMState<Player>
 					owner.velocity.x = -100;
 				}
 			}
+
+			
 		}
 		
 	}

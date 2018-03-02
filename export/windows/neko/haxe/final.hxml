@@ -5,9 +5,6 @@
 -D lime=2.9.1
 -cp C:/HaxeToolkit/haxe/lib/openfl/3,6,1
 -D openfl=3.6.1
---macro keep('IntIterator')
--cp C:/HaxeToolkit/haxe/lib/hscript/2,1,1
--D hscript=2.1.1
 -cp C:/HaxeToolkit/haxe/lib/flixel-addons/2,5,0
 -D flixel-addons=2.5.0
 -cp source

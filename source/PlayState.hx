@@ -5,6 +5,7 @@ import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.FlxState;
+import flixel.group.FlxGroup;
 import flixel.input.keyboard.FlxKey;
 import flixel.math.FlxPoint;
 import flixel.text.FlxText;
@@ -17,19 +18,29 @@ using StringTools;
 
 class PlayState extends FlxState
 {
+	private var _player : Player;
 	
+	//PLAYER GAME TEXT
+	public var _actionText:FlxText;
+	
+	// INPUT BOOL
 	private var _editMode : Bool;
 
-	private var _player : Player;
+	
+	
+	//ENNEMY LIST
+	private var _enemyList : FlxTypedGroup<Enemy>;
 	private var _enemy : Enemy;
 	
+	
+	//TILEMAP 
 	private var _map:FlxTilemap;
 	private var _mapTable:Array<FlxColor>;
 	private static inline var TILE_WIDTH:Int = 16;
 	private static inline var TILE_HEIGHT:Int = 16;
 	private var currentTileID:Int;
 	
-	
+	//DEBUG TEXT
 	private var _info:String = "Current State: {STATE} \n";
 	private var _accX:String = "Acceleration X: {ACCX} \n";
 	private var _accY:String = "Acceleration Y: {ACCY} \n";
@@ -56,33 +67,53 @@ class PlayState extends FlxState
 	{
 		super.create();
 		bgColor = 0xff661166;
+	
+		//UI AND TEXT INIT
+		_actionText = new FlxText(0,0, 80);
+		//info.scrollFactor.set(0, 0); 
+		_actionText.borderColor = 0xff000000;
+		_actionText.borderStyle = SHADOW;
+		_actionText.text = "SLAIN";
+		_actionText.visible = false;
+		
+		_txtInfo = new FlxText(16, 16, -1, _info);
+		_txtInfo.color = FlxColor.YELLOW;
+		
+		
+		_editModeTxt = new FlxText(150, 20, -1, "EDIT MODE");
+		_editModeTxt.color = FlxColor.GREEN;
+		_editModeTxt.visible = false;
 		
 		
 		
 		var playerpos = new FlxPoint(0, 0);
-		
+	
 		_editMode = false;
+		
 		currentTileID = 1;
 		_mapTable = [FlxColor.WHITE, FlxColor.BLACK, FlxColor.BROWN, FlxColor.GRAY, FlxColor.RED];
 		_map = GenerateLevel("assets/data/fullMap.png", "assets/images/tiles.png", playerpos);
-		//_map = GenerateLevel("assets/data/fullMap.png", "assets/images/autotiles.png", playerpos);
 		add(_map);
 		
 		//INDISPENSABLE POUR QUE LE JEU CHARGE (FAIRE EN SORTE QU'IL SOIT PLUS GRAND QUE L'ENSEMBLE DES MAPS LOAD)
 		FlxG.worldBounds.set(0, 0, _map.width, _map.height);
-		
-		
 
 		_player = new Player(playerpos.x, playerpos.y, _map);
-		_enemy = new Enemy(playerpos.x + 150, playerpos.y+100, _map, _player); 
+		
+		_enemyList = new FlxTypedGroup<Enemy>();
+		_enemy = new Enemy(playerpos.x + 150, playerpos.y + 150, _map, _player); 
+		_enemyList.add(_enemy);
+		
+		
+		
+		
 		
 		//SIMPLE CAMERA A MODIFIER POUR LA RENDRE BIEN COOL
 		this.camera.follow(_player, SCREEN_BY_SCREEN, 0.2);
-		//this.camera.follow(_hero, SCREEN_BY_SCREEN, 0.2);
 		this.camera.snapToTarget();
 		
 		
-		add(_enemy);
+		add(_enemyList);
 		add(_player);
 		add(_player.canvas);
 		add(_player.canvas2);
@@ -90,25 +121,24 @@ class PlayState extends FlxState
 		add(_player.canvas4);
 		add(_player.canvas5);
 		add(_player.canvas6);
-		_txtInfo = new FlxText(16, 16, -1, _info);
-		_txtInfo.color = FlxColor.YELLOW;
-		add(_txtInfo);
 		
-		_editModeTxt = new FlxText(150, 20, -1, "EDIT MODE");
-		_editModeTxt.color = FlxColor.GREEN;
-		_editModeTxt.visible = false;
+		//ADD UI
+		add(_actionText);
+		
+		add(_txtInfo);
 		add(_editModeTxt);
 		
 	}
 
 	override public function update(elapsed:Float):Void
 	{
+		
+		
+		//INPUT
 		if (FlxG.mouse.pressed && _editMode)
 		{
 			//Rendre la map modifiable
 			_map.setTile(Std.int(FlxG.mouse.x / TILE_WIDTH), Std.int(FlxG.mouse.y / TILE_HEIGHT), currentTileID, true);
-			//map.setT
-			
 		}
 		
 		if (FlxG.keys.justPressed.PLUS)
@@ -122,9 +152,10 @@ class PlayState extends FlxState
 			_editMode = !_editMode;
 		}
 		
-		
-		FlxG.collide(_player, _map);
-		FlxG.collide(_enemy, _map);
+		if (FlxG.keys.justPressed.NUMPADZERO)
+		{
+			_txtInfo.visible = !_txtInfo.visible;
+		}
 		
 		//C'est degeu mais c'est que du debug
 		_editModeTxt.setPosition(this.camera.scroll.x + 150, this.camera.scroll.y + 20);
@@ -149,7 +180,45 @@ class PlayState extends FlxState
 			FlxG.resetState();
 		}
 		
+		
+		
+		//OVERLAP AND COLLIDE
+		
+			
+		FlxG.collide(_player, _map);
+		FlxG.collide(_enemyList, _map);
+		
+		if (_player.is_bathing)
+		{
+			if (!FlxG.overlap(_player, _enemyList, CanSlain))
+			{
+				_actionText.visible = false;	
+			}
+			else
+			{
+				trace("OVERLAP");
+			}
+		}
+		
+		
+		
+		
+		
 		super.update(elapsed);
+	}
+	
+	//CALLBACK OVERLAP 
+	public function CanSlain(owner:Player,enemy:Enemy)
+	{
+		_actionText.setPosition(enemy.x-10, enemy.y - 15);
+		_actionText.visible = true;
+		
+		//SLAIN ENEMY
+		if (FlxG.keys.justPressed.E)
+		{
+			enemy.kill();	
+		}
+		
 	}
 	
 	

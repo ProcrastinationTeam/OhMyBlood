@@ -26,7 +26,7 @@ class Enemy extends FlxSprite
 	
 	
 	//IA var
-	
+	public var _nullPosition : FlxPoint;
 	public var _lastPlayerPositionKnown:FlxPoint;
 	public var _distanceToPlayer:Int;
 	
@@ -63,7 +63,7 @@ class Enemy extends FlxSprite
 		
 		//AI INIT
 		_lastPlayerPositionKnown = new FlxPoint();
-		
+		_nullPosition = new FlxPoint();
 		//RAYCAST SECTION 
 		checkWallRay = true;
 		
@@ -73,7 +73,7 @@ class Enemy extends FlxSprite
 	
 	override public function update(elapsed:Float):Void
 	{
-		
+		//trace("LAST POS KNOWN : " + this._lastPlayerPositionKnown);
 		if (this.facing == FlxObject.RIGHT)
 		{
 			checkWallRay = this._map.ray(new FlxPoint(this.x,this.y+10), new FlxPoint(this.x + 10, this.y+10), 10);
@@ -84,7 +84,7 @@ class Enemy extends FlxSprite
 		}
 		
 		
-		trace("WALL RAY : " + checkWallRay);
+		//trace("WALL RAY : " + checkWallRay);
 		
 		checkEnemyVision();
 		fsm.update(elapsed);
@@ -103,7 +103,7 @@ class Enemy extends FlxSprite
 		
 		//calcul de distance nécessaire
 		_distanceToPlayer = FlxMath.distanceBetween(this, _player);
-		trace("DISTANCE DU JOUEUR : " + _distanceToPlayer);
+		//trace("DISTANCE DU JOUEUR : " + _distanceToPlayer);
 		
 		if (_distanceToPlayer <= 100 &&  _map.ray(new FlxPoint(this.x,this.y), _player.getMidpoint()) && !_player.is_bathing )
 		{
@@ -148,7 +148,7 @@ class EnemyIdle extends FlxFSMState<Enemy>
 		//CREER UN STATE ALERT
 		var dir = owner.x - owner._lastPlayerPositionKnown.x;
 		
-		if (owner._lastPlayerPositionKnown != new FlxPoint(0, 0) && FlxMath.absInt(Std.int(dir)) != 0 )
+		if (!owner._lastPlayerPositionKnown.equals(owner._nullPosition) && FlxMath.absInt(Std.int(dir)) != 0 )
 		{
 			//tentative de saut
 			if (!owner.checkWallRay && (owner.y - owner._lastPlayerPositionKnown.y > 0))
