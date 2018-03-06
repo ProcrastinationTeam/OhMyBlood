@@ -32,6 +32,7 @@ class PlayState extends FlxState
 	//ENNEMY LIST
 	private var _enemyList : FlxTypedGroup<Enemy>;
 	private var _enemy : Enemy;
+	private var _ennemyPosList : Array<FlxPoint>;
 	
 	
 	//TILEMAP 
@@ -90,11 +91,12 @@ class PlayState extends FlxState
 		
 		
 		var playerpos = new FlxPoint(0, 0);
+		_ennemyPosList = new Array<FlxPoint>();
 	
 		_editMode = false;
 		
 		currentTileID = 1;
-		_mapTable = [FlxColor.WHITE, FlxColor.BLACK, FlxColor.BROWN, FlxColor.GRAY, FlxColor.RED];
+		_mapTable = [FlxColor.WHITE, FlxColor.BLACK, FlxColor.BROWN, FlxColor.GRAY, FlxColor.RED, FlxColor.CYAN];
 		_map = GenerateLevel("assets/data/fullMap.png", "assets/images/tiles.png", playerpos);
 		add(_map);
 		
@@ -104,9 +106,12 @@ class PlayState extends FlxState
 		_player = new Player(playerpos.x, playerpos.y, _map);
 		
 		_enemyList = new FlxTypedGroup<Enemy>();
-		_enemy = new Enemy(playerpos.x + 150, playerpos.y + 150, _map, _player); 
+		//_enemy = new Enemy(playerpos.x + 150, playerpos.y + 150, _map, _player); 
+		_enemy = new Enemy(_ennemyPosList[0].x, _ennemyPosList[0].y, _map, _player); 
 		_enemyList.add(_enemy);
-		var _enemy2 = new Enemy(playerpos.x + 250, playerpos.y + 150, _map, _player); 
+		
+		//var _enemy2 = new Enemy(playerpos.x + 250, playerpos.y + 150, _map, _player); 
+		var _enemy2 = new Enemy(_ennemyPosList[1].x, _ennemyPosList[1].y, _map, _player); 
 		_enemyList.add(_enemy2);
 		
 		//SIMPLE CAMERA A MODIFIER POUR LA RENDRE BIEN COOL
@@ -115,6 +120,8 @@ class PlayState extends FlxState
 		
 		
 		add(_enemyList);
+	
+		
 		add(_player);
 		add(_player.canvas);
 		add(_player.canvas2);
@@ -130,6 +137,10 @@ class PlayState extends FlxState
 		add(_editModeTxt);
 		
 		_slainableEnemies = [];
+		
+		//DEBUG VA DISPARAITRE
+		add(_enemy._debugText);
+		
 	}
 
 	override public function update(elapsed:Float):Void
@@ -273,6 +284,14 @@ class PlayState extends FlxState
 		var playerTiles:Array<Int> = map.getTileInstances(_mapTable.length-1);
 		var playerTile:Int = playerTiles[0];
 		map.setTileByIndex(playerTile, 0, true);
+		
+		_ennemyPosList = map.getTileCoords(_mapTable.length - 2, false);
+		
+		var enemyTiles:Array<Int> = map.getTileInstances(_mapTable.length - 2);
+		for (tile in enemyTiles)
+		{
+			map.setTileByIndex(tile, 0, true);
+		}
 		
 		//var halfTile:Array<FlxPoint> = map.getTileCoords(mapTable.length - 2, false);
 		//var halfTile:Array<Int> = map.getTileInstances(mapTable.length - 2);

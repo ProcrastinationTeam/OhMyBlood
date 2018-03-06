@@ -1,5 +1,7 @@
 package;
 
+import flash.display.IBitmapDrawable;
+import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.addons.util.FlxFSM;
@@ -9,6 +11,7 @@ import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.math.FlxVelocity;
 import flixel.system.FlxAssets.FlxGraphicAsset;
+import flixel.text.FlxText;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
 import player.Player;
@@ -22,16 +25,22 @@ class Enemy extends FlxSprite
 	//FSM
 	public var fsm:FlxFSM<Enemy>;
 
-	
-	
 	//TILEMAP
 	public var _map:FlxTilemap;
-	
 	
 	//USEFULL
 	public var _player:Player;
 	public var seePlayer:Bool = false;
 	public var _health:Int = 100;
+	
+		//TEST
+	public var _suspicion:Int = 0;
+	public var _suspicious:Bool = false;
+	public var _playerRepered:Bool = false;
+	public var tempoAvirer:Int = 0;
+	public var _isFearable: Bool = false;
+	public var _playerPosFromThis:Float;
+	public var _initialPos:FlxPoint;
 	
 	//IA var
 	public var _nullPosition : FlxPoint;
@@ -44,6 +53,9 @@ class Enemy extends FlxSprite
 	//PARTICLE SYSTEM
 	public var _particleEmitter:FlxEmitter;
 	
+	//DEBUG
+	public var _debugText:FlxText;
+	
 	
 	
 	public function new(?X:Float=0, ?Y:Float=0, map:FlxTilemap, player:Player) 
@@ -52,6 +64,7 @@ class Enemy extends FlxSprite
 		super(X, Y);
 		_map = map;
 		_player = player;
+		_initialPos = new FlxPoint(X, Y);
 		
 		//GRAPHICS INIT
 		this.loadGraphic("assets/images/enemy.png", true, 16, 16, false);
@@ -63,7 +76,8 @@ class Enemy extends FlxSprite
 		this.animation.add("idle", [0]);
 		this.animation.add("walk", [0, 1], 6, true);
 		this.animation.add("dieStart", [0,2,3,4,4,4,4,4], 6,false);
-		this.animation.add("dieEnd", [5,5,5,6], 6,false);
+		this.animation.add("dieEnd", [5, 5, 5, 6], 6, false);
+		this.animation.add("fear", [7, 8], 6, true);
 		this.animation.play("idle");
 		
 		
@@ -76,10 +90,23 @@ class Enemy extends FlxSprite
 		//FSM INIT
 		fsm = new FlxFSM<Enemy>(this);
 		fsm.transitions
-		.add(EnemyIdle, Chase, EnemyConditions.see)
-		.add(Chase, EnemyIdle, EnemyConditions.idle)
+		.add(EnemyIdle, Chase, EnemyConditions.very_suspicious)
+		.add(EnemyIdle, EnemyFear, EnemyConditions.fear)
+		.add(EnemyIdle, EnemyPatrol, EnemyConditions.suspicious) 
 		.add(EnemyIdle, EnemyDead, EnemyConditions.dead)
+		
+		.add(Chase, EnemyIdle, EnemyConditions.notsuspicious)
+		.add(Chase, EnemyPatrol, EnemyConditions.not_very_suspicious)
 		.add(Chase, EnemyDead, EnemyConditions.dead)
+		
+		.add(EnemyPatrol, EnemyIdle, EnemyConditions.notsuspicious)
+		.add(EnemyPatrol, Chase, EnemyConditions.very_suspicious)
+		.add(EnemyPatrol, EnemyDead, EnemyConditions.dead)
+		
+		
+		.add(EnemyFear, EnemyIdle, EnemyConditions.calm_down)
+		.add(EnemyFear, EnemyDead, EnemyConditions.dead)
+		
 		.start(EnemyIdle);
 		
 		//AI INIT
@@ -101,10 +128,19 @@ class Enemy extends FlxSprite
 		_particleEmitter.solid = true;
 		
 		
+		
+		//DEBUG TEXT
+		_debugText = new FlxText(this.x, this.y - 20, 0, "SEE : ", 8);
+		
+		
+		
 	}
 	
 	override public function update(elapsed:Float):Void
 	{
+		
+		_playerPosFromThis = this.x - _player.x; 
+		
 		//trace("LAST POS KNOWN : " + this._lastPlayerPositionKnown);
 		if (this.facing == FlxObject.RIGHT)
 		{
@@ -119,6 +155,9 @@ class Enemy extends FlxSprite
 		//trace("WALL RAY : " + checkWallRay);
 		
 		checkEnemyVision();
+		_debugText.setPosition(this.x , this.y - 20);
+		_debugText.text = "SEE : " + _suspicion;
+		
 		fsm.update(elapsed);
 		super.update(elapsed);
 	}
@@ -147,14 +186,61 @@ class Enemy extends FlxSprite
 		_distanceToPlayer = FlxMath.distanceBetween(this, _player);
 		//trace("DISTANCE DU JOUEUR : " + _distanceToPlayer);
 		
-		if (_distanceToPlayer <= 100 &&  _map.ray(new FlxPoint(this.x,this.y), _player.getMidpoint()) && !_player.is_bathing )
+		if (_distanceToPlayer <= Tweaking.ennemyVisionDistance &&  _map.ray(new FlxPoint(this.x,this.y), _player.getMidpoint()) && !_player.is_bathing )
 		{
 			seePlayer = true;
-			_lastPlayerPositionKnown = _player.getPosition();
+			
+			if (!this._isFearable)
+			{
+				_lastPlayerPositionKnown = _player.getPosition();
+			}
+			
+			if (_suspicion < 100)
+			{
+				_suspicion++;
+			}
+			else
+			{
+				_suspicion = 100;
+			}
+			
 		}
 		else
 		{
 			seePlayer = false;
+			if (_playerRepered)
+			{
+				if (tempoAvirer == 10)
+				{
+					if (_suspicion > 0)
+					{
+						_suspicion--;
+					}
+					else
+					{
+						_suspicion = 0;
+					}
+					
+					tempoAvirer = 0;
+				}
+				tempoAvirer++;
+				
+				
+				
+			}
+			else
+			{
+				if (_suspicion > 0)
+				{
+					_suspicion--;
+				}
+				else
+				{
+					_suspicion = 0;
+				}
+			}
+			
+			
 		}
 	}
 	
@@ -169,10 +255,9 @@ class EnemyConditions
 		return(!Owner.seePlayer);
 	}
 
-	
 	public static function see(Owner:Enemy)
 	{
-		return(Owner.seePlayer);
+		return(Owner.seePlayer && !Owner._isFearable);
 	}
 	
 	public static function dead(Owner:Enemy)
@@ -180,14 +265,45 @@ class EnemyConditions
 		return(Owner._health <= 0);
 	}
 	
+	public static function suspicious(Owner:Enemy)
+	{
+		return(Owner._suspicion > 20 && !Owner._suspicious);
+	}
+	
+	public static function very_suspicious(Owner:Enemy)
+	{
+		return(Owner._suspicion > 50 && Owner._suspicious);
+	}
+	
+	public static function not_very_suspicious(Owner:Enemy)
+	{
+		return(Owner._suspicion <= 40);
+	}
+	
+	public static function notsuspicious(Owner:Enemy)
+	{
+		return(Owner._suspicion <= 15);
+	}
+	
+	public static function fear(Owner:Enemy)
+	{
+		return(Owner._suspicion < 20 && Owner._isFearable && Owner.seePlayer);
+	}
+	
+	public static function calm_down(Owner:Enemy)
+	{
+		return(Owner._suspicion <= 5 && Owner._isFearable && !Owner.seePlayer);
+	}
+	
 }
 
-class EnemyIdle extends FlxFSMState<Enemy>
+class EnemyPatrol extends FlxFSMState<Enemy>
 {
 	override public function enter(owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
-		trace("ENEMY ENTER IDLE MODE");
+		trace("ENEMY ENTER PATROL MODE");
 		owner.animation.play("idle");
+		owner._suspicious = true;
 	}
 	
 	override public function update(elapsed:Float,owner: Enemy, fsm:FlxFSM<Enemy>):Void
@@ -225,12 +341,109 @@ class EnemyIdle extends FlxFSMState<Enemy>
 	
 }
 
+
+
+class EnemyIdle extends FlxFSMState<Enemy>
+{
+	override public function enter(owner:Enemy, fsm:FlxFSM<Enemy>):Void 
+	{
+		trace("ENEMY ENTER IDLE MODE");
+		owner._suspicious = false;
+	}
+	
+	
+	override public function update(elapsed:Float, owner:Enemy, fsm:FlxFSM<Enemy>):Void 
+	{
+	//	if (!owner._initialPos.equals(owner.getPosition()))
+		if (owner._initialPos.x != owner.getPosition().x )
+		{
+			owner.animation.play("walk");
+			var dir = owner.getPosition().x - owner._initialPos.x;
+			if (dir > 0)
+			{
+				owner.facing = FlxObject.LEFT;
+				owner.velocity.x = -20;
+			}
+			else
+			{
+				owner.facing = FlxObject.RIGHT;
+				owner.velocity.x = 20;
+			}
+			
+		}
+		else
+		{
+			owner.velocity.x = 0;
+		}
+	}
+	
+	override public function exit(owner:Enemy):Void 
+	{
+		
+	}
+	
+}
+
+
+class EnemyFear extends FlxFSMState<Enemy>
+{
+	
+	override public function enter(owner:Enemy, fsm:FlxFSM<Enemy>):Void 
+	{
+		trace("ENEMY ENTER FEAR MODE");
+		owner.animation.play("fear");
+	}
+	
+	
+	override public function update(elapsed:Float, owner:Enemy, fsm:FlxFSM<Enemy>):Void 
+	{
+		if (owner._playerPosFromThis > 0)
+			{
+				owner.velocity.x = 30;
+				owner.facing = FlxObject.RIGHT;
+			}
+			else
+			{
+				owner.velocity.x = -30;
+				owner.facing = FlxObject.LEFT;
+			}
+	}
+	
+	override public function exit(owner:Enemy):Void 
+	{
+		owner.velocity.x = 0;
+	}
+	
+}
+
+
+class EnemyAfterAlert extends FlxFSMState<Enemy>
+{
+	override public function enter(owner:Enemy, fsm:FlxFSM<Enemy>):Void 
+	{
+		trace("ENEMY ENTER PATROL MODE");
+	}
+	
+	
+	override public function update(elapsed:Float, owner:Enemy, fsm:FlxFSM<Enemy>):Void 
+	{
+		
+	}
+	
+	override public function exit(owner:Enemy):Void 
+	{
+		
+	}
+	
+}
+
 class Chase extends FlxFSMState<Enemy>
 {
 	override public function enter(owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
 		trace("ENEMY ENTER CHASING MODE");
 		owner.animation.play("walk");
+		owner._playerRepered = true;
 	}
 	
 	override public function update(elapsed:Float,owner: Enemy, fsm:FlxFSM<Enemy>):Void
