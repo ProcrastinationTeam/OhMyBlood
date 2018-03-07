@@ -112,7 +112,7 @@ class PlayState extends FlxState
 		
 		//var _enemy2 = new Enemy(playerpos.x + 250, playerpos.y + 150, _map, _player); 
 		var _enemy2 = new Enemy(_ennemyPosList[1].x, _ennemyPosList[1].y, _map, _player); 
-		_enemyList.add(_enemy2);
+		//_enemyList.add(_enemy2);
 		
 		//SIMPLE CAMERA A MODIFIER POUR LA RENDRE BIEN COOL
 		this.camera.follow(_player, SCREEN_BY_SCREEN, 0.2);
@@ -140,6 +140,7 @@ class PlayState extends FlxState
 		
 		//DEBUG VA DISPARAITRE
 		add(_enemy._debugText);
+		add(_enemy._debugStateText);
 		
 	}
 

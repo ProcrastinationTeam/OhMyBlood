@@ -9,6 +9,7 @@ import flixel.effects.particles.FlxEmitter;
 import flixel.effects.particles.FlxParticle;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
+import flixel.math.FlxVector;
 import flixel.math.FlxVelocity;
 import flixel.system.FlxAssets.FlxGraphicAsset;
 import flixel.text.FlxText;
@@ -39,13 +40,19 @@ class Enemy extends FlxSprite
 	public var _playerRepered:Bool = false;
 	public var tempoAvirer:Int = 0;
 	public var _isFearable: Bool = false;
-	public var _playerPosFromThis:Float;
+	public var _playerDistanceFromEnemy:Float;
 	public var _initialPos:FlxPoint;
+
 	
 	//IA var
 	public var _nullPosition : FlxPoint;
 	public var _lastPlayerPositionKnown:FlxPoint;
 	public var _distanceToPlayer:Int;
+
+		public static  var _vectorR:FlxVector = new FlxVector(1, 0);
+		public static  var _vectorL:FlxVector = new FlxVector( -1, 0);
+		
+		
 	
 	public var checkWallRay:Bool;
 	
@@ -55,6 +62,7 @@ class Enemy extends FlxSprite
 	
 	//DEBUG
 	public var _debugText:FlxText;
+	public var _debugStateText:FlxText;
 	
 	
 	
@@ -131,7 +139,7 @@ class Enemy extends FlxSprite
 		
 		//DEBUG TEXT
 		_debugText = new FlxText(this.x, this.y - 20, 0, "SEE : ", 8);
-		
+		_debugStateText = new FlxText(this.x, this.y - 30, 0, "", 8);
 		
 		
 	}
@@ -139,7 +147,7 @@ class Enemy extends FlxSprite
 	override public function update(elapsed:Float):Void
 	{
 		
-		_playerPosFromThis = this.x - _player.x; 
+		_playerDistanceFromEnemy = this.x - _player.x; 
 		
 		//trace("LAST POS KNOWN : " + this._lastPlayerPositionKnown);
 		if (this.facing == FlxObject.RIGHT)
@@ -152,11 +160,11 @@ class Enemy extends FlxSprite
 		}
 		
 		
-		//trace("WALL RAY : " + checkWallRay);
-		
 		checkEnemyVision();
 		_debugText.setPosition(this.x , this.y - 20);
 		_debugText.text = "SEE : " + _suspicion;
+		
+		_debugStateText.setPosition(this.x , this.y - 30);
 		
 		fsm.update(elapsed);
 		super.update(elapsed);
@@ -181,12 +189,27 @@ class Enemy extends FlxSprite
 	
 	private function checkEnemyVision()
 	{
+		var currentVector:FlxVector;
+		
+		//Prendre en compte le facing
+		if (facing == FlxObject.LEFT)
+		{
+			currentVector = _vectorL;
+		}
+		else
+		{
+			currentVector = _vectorR;
+		}
+		
+		//si le dotproduct est négatif alors l'enemy regarde dans le sens ou se trouve le joueur et donc le vois
+		//sinon c'est l'inverse
+		var dotProd = currentVector.dotProduct(new FlxVector(FlxMath.signOf(_playerDistanceFromEnemy), 0));
 		
 		//calcul de distance nécessaire
 		_distanceToPlayer = FlxMath.distanceBetween(this, _player);
-		//trace("DISTANCE DU JOUEUR : " + _distanceToPlayer);
+	
 		
-		if (_distanceToPlayer <= Tweaking.ennemyVisionDistance &&  _map.ray(new FlxPoint(this.x,this.y), _player.getMidpoint()) && !_player.is_bathing )
+		if (_distanceToPlayer <= Tweaking.ennemyVisionDistance && dotProd < 0 &&  _map.ray(new FlxPoint(this.x,this.y), _player.getMidpoint()) && !_player.is_bathing )
 		{
 			seePlayer = true;
 			
@@ -225,8 +248,6 @@ class Enemy extends FlxSprite
 				}
 				tempoAvirer++;
 				
-				
-				
 			}
 			else
 			{
@@ -239,8 +260,6 @@ class Enemy extends FlxSprite
 					_suspicion = 0;
 				}
 			}
-			
-			
 		}
 	}
 	
@@ -302,6 +321,7 @@ class EnemyPatrol extends FlxFSMState<Enemy>
 	override public function enter(owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
 		trace("ENEMY ENTER PATROL MODE");
+		owner._debugStateText.text = "PATROL";
 		owner.animation.play("idle");
 		owner._suspicious = true;
 	}
@@ -330,14 +350,15 @@ class EnemyPatrol extends FlxFSMState<Enemy>
 				owner.facing = FlxObject.LEFT;
 			}
 		}
+		else
+		{
+			owner.velocity.x = 0;
+		}
 	}
 	
 	override public function exit(owner: Enemy):Void
 	{
 	}
-	
-
-	
 	
 }
 
@@ -348,33 +369,58 @@ class EnemyIdle extends FlxFSMState<Enemy>
 	override public function enter(owner:Enemy, fsm:FlxFSM<Enemy>):Void 
 	{
 		trace("ENEMY ENTER IDLE MODE");
+		owner.animation.play("idle");
+		owner._debugStateText.text = "IDLE";
 		owner._suspicious = false;
 	}
 	
 	
 	override public function update(elapsed:Float, owner:Enemy, fsm:FlxFSM<Enemy>):Void 
 	{
+		//RANDOM MOVE
+		var rangeOfMove = 20;
+		
+		var maxDist = owner._initialPos.x + rangeOfMove;
+		var maxDistO = owner._initialPos.x - rangeOfMove;
+		
+		var rand = FlxG.random.int(0, 2);
+		
+		switch (rand) 
+		{
+			case 0:
+				owner.velocity.x = 0;
+			case 1:
+				owner.velocity.x = 10;
+			case 2:
+				owner.velocity.x = -10;
+				
+			default:
+				
+		}
+		
+		
+		
 	//	if (!owner._initialPos.equals(owner.getPosition()))
-		if (owner._initialPos.x != owner.getPosition().x )
-		{
-			owner.animation.play("walk");
-			var dir = owner.getPosition().x - owner._initialPos.x;
-			if (dir > 0)
-			{
-				owner.facing = FlxObject.LEFT;
-				owner.velocity.x = -20;
-			}
-			else
-			{
-				owner.facing = FlxObject.RIGHT;
-				owner.velocity.x = 20;
-			}
-			
-		}
-		else
-		{
-			owner.velocity.x = 0;
-		}
+		//if (owner._initialPos.x != owner.getPosition().x )
+		//{
+			//owner.animation.play("walk");
+			//var dir = owner.getPosition().x - owner._initialPos.x;
+			//if (dir > 0)
+			//{
+				//owner.facing = FlxObject.LEFT;
+				//owner.velocity.x = -20;
+			//}
+			//else
+			//{
+				//owner.facing = FlxObject.RIGHT;
+				//owner.velocity.x = 20;
+			//}
+			//
+		//}
+		//else
+		//{
+			//owner.velocity.x = 0;
+		//}
 	}
 	
 	override public function exit(owner:Enemy):Void 
@@ -391,13 +437,14 @@ class EnemyFear extends FlxFSMState<Enemy>
 	override public function enter(owner:Enemy, fsm:FlxFSM<Enemy>):Void 
 	{
 		trace("ENEMY ENTER FEAR MODE");
+		owner._debugStateText.text = "FEAR";
 		owner.animation.play("fear");
 	}
 	
 	
 	override public function update(elapsed:Float, owner:Enemy, fsm:FlxFSM<Enemy>):Void 
 	{
-		if (owner._playerPosFromThis > 0)
+		if (owner._playerDistanceFromEnemy > 0)
 			{
 				owner.velocity.x = 30;
 				owner.facing = FlxObject.RIGHT;
@@ -442,6 +489,7 @@ class Chase extends FlxFSMState<Enemy>
 	override public function enter(owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
 		trace("ENEMY ENTER CHASING MODE");
+		owner._debugStateText.text = "CHASE";
 		owner.animation.play("walk");
 		owner._playerRepered = true;
 	}
@@ -449,36 +497,45 @@ class Chase extends FlxFSMState<Enemy>
 	override public function update(elapsed:Float,owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
 		//trace("ENNEMY CHASE");
-		if (owner._distanceToPlayer <= 100  && owner._distanceToPlayer > 10)
+		if (!owner._player.is_bathing)
 		{
-			owner.animation.play("walk");
-			//tentative de saut
-			if (!owner.checkWallRay && (owner.y - owner._player.y > 0))
+			if (owner._distanceToPlayer <= 100  && owner._distanceToPlayer > 10)
 			{
-				owner.velocity.y =- 150; 
+				owner.animation.play("walk");
+				//tentative de saut
+				if (!owner.checkWallRay && (owner.y - owner._player.y > 0))
+				{
+					owner.velocity.y =- 150; 
+				}
+				
+				
+				//aller vers le joueur
+				var dir = owner.x - owner._player.x;
+				if (dir < 0)
+				{
+					owner.velocity.x = 20;
+					owner.facing = FlxObject.RIGHT;
+				}
+				else
+				{
+					owner.velocity.x = -20;
+					owner.facing = FlxObject.LEFT;
+				}
 			}
-			
-			
-			//aller vers le joueur
-			var dir = owner.x - owner._player.x;
-			if (dir < 0)
+			else if (owner._distanceToPlayer <= 10)
 			{
-				owner.velocity.x = 20;
-				owner.facing = FlxObject.RIGHT;
-			}
-			else
-			{
-				owner.velocity.x = -20;
-				owner.facing = FlxObject.LEFT;
+				//Attack
+				owner.animation.play("idle");
+				trace("Launch attack");
+				owner.velocity.x = 0;
 			}
 		}
-		else if (owner._distanceToPlayer <= 10)
+		else
 		{
-			//Attack
-			owner.animation.play("idle");
-			trace("Launch attack");
-			owner.velocity.x = 0;
+			trace("OU EST IL PASSER ??");
 		}
+		
+		
 		
 	}
 	
@@ -494,6 +551,7 @@ class EnemyDead extends FlxFSMState<Enemy>
 	override public function enter(owner: Enemy, fsm:FlxFSM<Enemy>):Void
 	{
 		trace("I'm DEAD");	
+		owner._debugStateText.text = "DEAD";
 		owner.animation.play("dieStart");
 		owner.allowCollisions = FlxObject.NONE;
 		owner.velocity.x  = 0;
