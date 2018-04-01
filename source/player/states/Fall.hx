@@ -31,7 +31,7 @@ class Fall extends FlxFSMState<Player>
 		{
 			
 			owner.facing = FlxG.keys.pressed.LEFT ? FlxObject.LEFT : FlxObject.RIGHT;
-			owner.velocity.x = FlxG.keys.pressed.LEFT ? -75 : 75;
+			owner.velocity.x = FlxG.keys.pressed.LEFT ? -100 : 100;
 			
 		}
 		else

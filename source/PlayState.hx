@@ -1,19 +1,26 @@
 package;
 
+
 import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
 import flixel.FlxState;
+import flixel.effects.particles.FlxEmitter;
 import flixel.group.FlxGroup;
 import flixel.input.keyboard.FlxKey;
+import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.text.FlxText;
 import flixel.tile.FlxTile;
 import flixel.tile.FlxTileblock;
 import flixel.tile.FlxTilemap;
+import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
+import npcs.npcs_type.EnemyFearable;
+import Lighting;
 import player.Player;
+import npcs.npcs_type.EnemyChaser;
 using flixel.util.FlxSpriteUtil;
 using StringTools;
 
@@ -30,9 +37,11 @@ class PlayState extends FlxState
 	
 	
 	//ENNEMY LIST
-	private var _enemyList : FlxTypedGroup<Enemy>;
-	private var _enemy : Enemy;
+	private var _enemyList : FlxTypedGroup<EnemyChaser>;
+	private var _enemy : EnemyChaser;
 	private var _ennemyPosList : Array<FlxPoint>;
+	private var _enemyF : EnemyFearable;
+	
 	
 	
 	//TILEMAP 
@@ -65,7 +74,16 @@ class PlayState extends FlxState
 	private var _camera : FlxCamera;
 	//private var _camera : FlxCameraFollowStyle;
 	
-	private var _slainableEnemies : Array<Enemy>;
+	//LIGHTING SYSTEM
+	private var light: FlxSprite;
+	private var bloodLight: FlxSprite;
+	private var enemyBloodLight: FlxSprite;
+	private var lightingSystem: Lighting;
+	private var lightingSystemBB: Lighting;
+	
+	
+	
+	private var _slainableEnemies : Array<npcs.npcs_type.EnemyChaser>;
 	
 	override public function create():Void
 	{
@@ -105,30 +123,100 @@ class PlayState extends FlxState
 
 		_player = new Player(playerpos.x, playerpos.y, _map);
 		
-		_enemyList = new FlxTypedGroup<Enemy>();
-		//_enemy = new Enemy(playerpos.x + 150, playerpos.y + 150, _map, _player); 
-		_enemy = new Enemy(_ennemyPosList[0].x, _ennemyPosList[0].y, _map, _player); 
+		//Enemy instanciation
+		_enemyList = new FlxTypedGroup<npcs.npcs_type.EnemyChaser>();
+		_enemy = new npcs.npcs_type.EnemyChaser(_ennemyPosList[0].x, _ennemyPosList[0].y, _map, _player); 
 		_enemyList.add(_enemy);
 		
-		//var _enemy2 = new Enemy(playerpos.x + 250, playerpos.y + 150, _map, _player); 
-		var _enemy2 = new Enemy(_ennemyPosList[1].x, _ennemyPosList[1].y, _map, _player); 
-		//_enemyList.add(_enemy2);
+		//test de l'ennemi qui a peur ( a supprimer)
+		_enemyF = new EnemyFearable(_ennemyPosList[0].x - 20 , _ennemyPosList[0].y, _map, _player);
+		add(_enemyF);
+		add(_enemyF._debugText);
+		add(_enemyF._debugStateText);
+		
+
 		
 		//SIMPLE CAMERA A MODIFIER POUR LA RENDRE BIEN COOL
 		this.camera.follow(_player, SCREEN_BY_SCREEN, 0.2);
 		this.camera.snapToTarget();
 		
 		
+	
+		
+		
 		add(_enemyList);
 	
 		
 		add(_player);
+		
 		add(_player.canvas);
 		add(_player.canvas2);
 		add(_player.canvas3);
 		add(_player.canvas4);
 		add(_player.canvas5);
 		add(_player.canvas6);
+		add(_player.biteHitbox);
+		
+		
+		
+		_slainableEnemies = [];
+		
+		
+		//LIGHTING SYSTEM
+		lightingSystem = new Lighting();
+		lightingSystem.alpha = 0.9; // or whatever
+		//lighting.blue = 20;   // for example
+		lightingSystem.color = FlxColor.BLACK;
+		add(lightingSystem);
+		
+		light = new FlxSprite();
+		//light.loadGraphic("assets/images/lantern.png", true, 64, 64, false);
+		light.loadGraphic("assets/images/light.png", true, 32, 128, false);
+		//light.animation.add("breath", [0,1,2], 3);
+		light.animation.add("breath", [0], 3);
+		light.animation.play("breath");
+		lightingSystem.add(light);
+		light.setPosition(60, 100);
+		
+		
+		var light2 = Reflect.copy(light);
+		lightingSystem.add(light2);
+		light2.setPosition(120, 100);
+		
+		var light3 = Reflect.copy(light);
+		lightingSystem.add(light3);
+		light3.setPosition(180, 100);
+		
+		
+		//LIGHTING SYSTEM 2 (BLOOD BATH) // couleur R48 B3 G3 ou R69 B2 G2
+		lightingSystemBB = new Lighting();
+		lightingSystemBB.alpha = 1.0; // or whatever
+		lightingSystemBB.blue = 2;   // for example
+		lightingSystemBB.green = 2;   // for example
+		lightingSystemBB.red = 69;   // for example
+		//lightingSystemBB.color = FlxColor.RED;
+		add(lightingSystemBB);
+		
+		
+		bloodLight = new FlxSprite();
+		bloodLight.loadGraphic("assets/images/splash.png", true, 32, 32, false);
+		bloodLight.animation.add("breath", [0], 3);
+		bloodLight.animation.play("breath");
+		lightingSystemBB.add(bloodLight);
+		
+		
+		enemyBloodLight = new FlxSprite();
+		enemyBloodLight.loadGraphic("assets/images/heart.png", true, 16, 16, false);
+		enemyBloodLight.animation.add("breath", [0,1], 2);
+		enemyBloodLight.animation.play("breath");
+		lightingSystemBB.add(enemyBloodLight);
+		
+		add(_player.visibilityIcon);
+		
+		//DEBUG VA DISPARAITRE
+		add(_enemy._debugText);
+		add(_enemy._debugStateText);
+		
 		
 		//ADD UI
 		add(_actionText);
@@ -136,19 +224,40 @@ class PlayState extends FlxState
 		add(_txtInfo);
 		add(_editModeTxt);
 		
-		_slainableEnemies = [];
-		
-		//DEBUG VA DISPARAITRE
-		add(_enemy._debugText);
-		add(_enemy._debugStateText);
 		
 	}
 
 	override public function update(elapsed:Float):Void
 	{
+		// TEST LIGHT
+		if (_player.is_bathing)
+		{
+			lightingSystem.visible = false;
+			lightingSystemBB.visible = true;
+			bloodLight.setPosition(_player.x-14, _player.y-16);
+			enemyBloodLight.setPosition(_enemy.x,_enemy.y);
+		}
+		else
+		{
+			lightingSystem.visible = true;
+			lightingSystemBB.visible = false;
+		}
 		
 		
-		//INPUT
+		
+		
+		// VISIBILITY SYSTEM
+		if (FlxG.overlap(_player, lightingSystem))
+		{
+			_player.visibility = 100;
+			FlxMath.distanceToPoint(_player,
+		}
+		else
+		{
+			_player.visibility = 0;
+		}
+		
+		// INPUT
 		if (FlxG.mouse.pressed && _editMode)
 		{
 			//Rendre la map modifiable
@@ -171,7 +280,7 @@ class PlayState extends FlxState
 			_txtInfo.visible = !_txtInfo.visible;
 		}
 		
-		//C'est degeu mais c'est que du debug
+		// C'est degeu mais c'est que du debug
 		_editModeTxt.setPosition(this.camera.scroll.x + 150, this.camera.scroll.y + 20);
 		_txtInfo.setPosition( this.camera.scroll.x + 16, this.camera.scroll.y + 16);
 		
@@ -197,18 +306,12 @@ class PlayState extends FlxState
 		//OVERLAP AND COLLIDE
 		FlxG.collide(_player, _map);
 		FlxG.collide(_enemyList, _map);
+		FlxG.collide(_enemyF, _map);
 		
-		//if (_player.is_bathing)
-		//{
-			//if (!FlxG.overlap(_player, _enemyList, CanSlain))
-			//{
-				//_actionText.visible = false;	
-			//}
-			//else
-			//{
-				//trace("OVERLAP");
-			//}
-		//}
+		//Mettre en place un systeme pour que chaque enemy de la liste puisse add son particule emitter
+		FlxG.collide(_enemy._particleEmitter, _map, disableVelocity);
+		
+
 		
 		_slainableEnemies = [];
 		
@@ -230,6 +333,13 @@ class PlayState extends FlxState
 			}
 		}
 		
+		
+		if (!FlxG.overlap(_player.biteHitbox, _enemyF, EnemySlainable))
+		{
+			_actionText.visible = false;
+		}
+		
+		
 		super.update(elapsed);
 	}
 	
@@ -247,13 +357,33 @@ class PlayState extends FlxState
 		//}
 	//}
 	
+	//Pour les particules mais à supprimer
+	public function disableVelocity(part:FlxEmitter,map:FlxObject)
+	{
+		//part.immovable = true;
+		//part.acceleration.
+		
+	}
+	
+	
+	
 	//CALLBACK OVERLAP CONTIENT UN INPUT A MODIFIER 
-	public function EnemySlainable(owner:Player,enemy:Enemy)
+	public function EnemySlainable(owner:Player,enemy:EnemyChaser)
 	{
 		_actionText.setPosition(enemy.x-10, enemy.y - 15);
 		_actionText.visible = true;
-		
 		_slainableEnemies.push(enemy);
+	}
+	
+	public function EnemyBackstab(owner:Player,enemy:EnemyChaser)
+	{
+		if (enemy.facing == owner.facing)
+		{
+			_actionText.setPosition(enemy.x-10, enemy.y - 15);
+			_actionText.visible = true;
+			_slainableEnemies.push(enemy);
+		}
+		
 	}
 	
 	

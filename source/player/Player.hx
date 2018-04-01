@@ -35,15 +35,17 @@ class Player extends FlxSprite
 	public var is_climbing 	: Bool = false;
 	public var is_bathing 	: Bool = false;
 	
+	public var visibility : Int = 0;
 	
 	var jumping 		: Bool = false;
 	var doubleJumped 	: Bool = false;
 	
 	private var _maxVel: Int = 200;
 
+	//test for biting enemy
+	public var biteHitbox : FlxObject;
 	
-	//ENEMY RECOGNITION & INTERACTION //A REMOVE
-	//public var _enemyList:FlxTypedGroup<Enemy>;
+	
 	
 	
 	//UI AND TEXT
@@ -97,6 +99,7 @@ class Player extends FlxSprite
 	public var lastButtonPressed : FlxKey;
 	public var lastButtonDebug : FlxText;
 	
+	public var visibilityIcon : VisibilityIcon;
 	
 	//DEBUG UI
 	public var canvas:FlxSprite;
@@ -110,6 +113,9 @@ class Player extends FlxSprite
 	{
 		super(X, Y);
 		_map = map;
+		
+		visibilityIcon = new VisibilityIcon(camera.width - 50, 50);
+		
 		
 		
 		//RAYCAST USEFULL
@@ -168,6 +174,10 @@ class Player extends FlxSprite
 		acceleration.y = GRAVITY;
 		this.maxVelocity.set(150, GRAVITY);
 		
+		//HITBOX SUPPLEMENTAIRE
+		biteHitbox = new FlxObject(this.getMidpoint().x, Y, 8, 10);
+		
+		
 
 		//FSM INIT
 		fsm = new FlxFSM<Player>(this);
@@ -181,6 +191,8 @@ class Player extends FlxSprite
 			.add(Walk, Climb, Conditions.climb)
 			
 			.add(Jump, Walk, Conditions.grounded)
+			//peut etre creer un state wall jump
+			.add(Jump, Jump, Conditions.jump)
 			.add(Jump, Fall, Conditions.fall)
 			.add(Jump, Dash, Conditions.dash)
 			.add(Jump, Climb, Conditions.climb)
@@ -221,6 +233,9 @@ class Player extends FlxSprite
 	
 	override public function update(elapsed:Float):Void
 	{
+		
+		visibilityIcon.getPlayerVisibility(this.visibility);
+		
 		//LE RAYCAST NE SEMBLE PAS BIEN FONCTIONNE (IL FAUT METTRE UNE VALEURE AU DERNIER PARAMETRE POUR PLUS DE PRECISION ! )
 		//DEBUG RAYCAST
 		this.canvas.fill(FlxColor.TRANSPARENT);
@@ -236,10 +251,10 @@ class Player extends FlxSprite
 	
 		
 		//DOWN RAY
-		startDownRightRayPoint = new FlxPoint(this.x + this.width - 1, this.y + this.height );
-		endDownRightRayPoint = new FlxPoint(this.x + this.width - 1, this.y + this.height + 2 );
-		startDownLeftRayPoint = new FlxPoint(this.x + 1, this.y  + this.height );
-		endDownLeftRayPoint = new FlxPoint(this.x + 1, this.y + this.height + 2 );
+		startDownRightRayPoint = new FlxPoint(this.x + this.width -1, this.y + this.height );
+		endDownRightRayPoint = new FlxPoint(this.x + this.width -1, this.y + this.height + 2 );
+		startDownLeftRayPoint = new FlxPoint(this.x +1, this.y  + this.height );
+		endDownLeftRayPoint = new FlxPoint(this.x+1 , this.y + this.height + 2 );
 		
 		this.downRightRay = this._map.ray(startDownRightRayPoint, endDownRightRayPoint,downRightRayImpact, 10);
 		this.downLeftRay = this._map.ray(startDownLeftRayPoint, endDownLeftRayPoint,downLeftRayImpact, 10);
@@ -279,7 +294,8 @@ class Player extends FlxSprite
 			
 			this.canvas.drawLine(startRightRayPointHigh.x, startRightRayPointHigh.y, endRightRayPointHigh.x, endRightRayPointHigh.y, lineStyle);
 			this.canvas2.drawLine(startRightRayPointLow.x, startRightRayPointLow.y, endRightRayPointLow.x, endRightRayPointLow.y, lineStyle2);
-			
+				
+			biteHitbox.setPosition(this.x + this.width, this.y);
 		}
 		else
 		{	
@@ -297,9 +313,11 @@ class Player extends FlxSprite
 			this.canvas.drawLine(startLeftRayPointHigh.x, startLeftRayPointHigh.y, endLeftRayPointHigh.x, endLeftRayPointHigh.y, lineStyle);
 			this.canvas2.drawLine(startLeftRayPointLow.x, startLeftRayPointLow.y, endLeftRayPointLow.x, endLeftRayPointLow.y , lineStyle2);
 			
+			biteHitbox.setPosition(this.x - this.width, this.y);
 		}
+	
 		
-
+		
 		
 		fsm.update(elapsed);
 		super.update(elapsed);

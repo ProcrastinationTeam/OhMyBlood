@@ -69,4 +69,11 @@ class Conditions
 	{
 		return Owner.animation.finished;
 	}
+	
+	
+	public static function biteEnemy(Owner:Player):Bool
+	{
+		return false;
+	}
+	
 }
