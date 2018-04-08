@@ -2,7 +2,7 @@ package npcs;
 
 import flixel.FlxG;
 import flixel.FlxObject;
-import npcs.npcs_type.EnemyChaser;
+import npcs.npcs.EnemyChaser;
 /**
  * ...
  * @author ...

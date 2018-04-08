@@ -7,7 +7,7 @@ package;
 class Tweaking 
 {
 
-	public static inline var ennemyVisionDistance	:Int = 75;
+	public static inline var ennemyVisionDistance	:Int = 150;
 
 	
 }

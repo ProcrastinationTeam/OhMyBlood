@@ -1,4 +1,4 @@
-package npcs.npcs_type;
+package npcs.npcs;
 
 import flixel.FlxG;
 import flixel.FlxObject;
@@ -17,20 +17,17 @@ import player.Player;
  * ...
  * @author ElRyoGrande
  */
-class EnemyFearable extends FlxSprite 
+class EnemyFearable extends Enemy 
 {
 	//FSM
 	public var fsm:FlxFSM<EnemyFearable>;
 
-	//TILEMAP
-	public var _map:FlxTilemap;
 	
 	//USEFULL
-	public var _player:Player;
 	public var seePlayer:Bool = false;
 	public var _health:Int = 100;
 	
-		//TEST
+	// TEST
 	public var _suspicion:Int = 0;
 	public var _suspicious:Bool = false;
 	public var _playerRepered:Bool = false;
@@ -53,8 +50,7 @@ class EnemyFearable extends FlxSprite
 	public var checkWallRay:Bool;
 	
 	
-	//PARTICLE SYSTEM
-	public var _particleEmitter:FlxEmitter;
+
 	
 	//DEBUG
 	public var _debugText:FlxText;
@@ -65,9 +61,7 @@ class EnemyFearable extends FlxSprite
 	public function new(?X:Float=0, ?Y:Float=0, map:FlxTilemap, player:Player) 
 	{
 		//BASIC INIT
-		super(X, Y);
-		_map = map;
-		_player = player;
+		super(X, Y, map, player);
 		_initialPos = new FlxPoint(X, Y);
 		
 		//GRAPHICS INIT
@@ -107,19 +101,7 @@ class EnemyFearable extends FlxSprite
 		//RAYCAST SECTION 
 		checkWallRay = true;
 		
-		//PARTICLE INIT
-		_particleEmitter = new FlxEmitter(this.x, this.y + this.width / 2);
-		_particleEmitter.makeParticles(1, 1, FlxColor.RED,1500);
-		_particleEmitter.launchMode = FlxEmitterMode.CIRCLE;
-		_particleEmitter.launchAngle.set( 0, -70);
-		_particleEmitter.acceleration.start.min.y =0;
-		_particleEmitter.acceleration.start.max.y = 0;
-		_particleEmitter.acceleration.end.min.y = 1000;
-		_particleEmitter.acceleration.end.max.y = 2000;
-		_particleEmitter.acceleration.end.min.x = 0;
-		_particleEmitter.acceleration.end.max.x = 0;
 		
-		_particleEmitter.solid = true;
 		
 		
 		

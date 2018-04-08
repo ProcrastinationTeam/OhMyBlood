@@ -76,4 +76,13 @@ class Conditions
 		return false;
 	}
 	
+	public static function ladder(Owner:Player):Bool
+	{
+		return(Owner.grab_ladder == true);
+	}
+	
+	public static function leaveLadder(Owner:Player):Bool
+	{
+		return(!Owner.grab_ladder);
+	}
 }

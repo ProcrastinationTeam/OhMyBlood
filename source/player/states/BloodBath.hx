@@ -14,6 +14,7 @@ class BloodBath extends FlxFSMState<Player>
 		owner.is_bathing = true;
 		owner.acceleration.y = 0;
 		owner.acceleration.x = 0;
+		owner.visibilityIcon.visible = false;
 		//owner.allowCollisions = FlxObject.NONE;
 		owner.setSize(8, 4);
 		owner.offset.set(4, 12);

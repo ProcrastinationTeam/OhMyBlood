@@ -17,10 +17,11 @@ import flixel.tile.FlxTileblock;
 import flixel.tile.FlxTilemap;
 import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
-import npcs.npcs_type.EnemyFearable;
+import npcs.Enemy;
+import npcs.npcs.EnemyFearable;
 import Lighting;
 import player.Player;
-import npcs.npcs_type.EnemyChaser;
+import npcs.npcs.EnemyChaser;
 using flixel.util.FlxSpriteUtil;
 using StringTools;
 
@@ -28,7 +29,7 @@ class PlayState extends FlxState
 {
 	private var _player : Player;
 	
-	//PLAYER GAME TEXT
+	// PLAYER GAME TEXT
 	public var _actionText:FlxText;
 	
 	// INPUT BOOL
@@ -36,22 +37,27 @@ class PlayState extends FlxState
 
 	
 	
-	//ENNEMY LIST
-	private var _enemyList : FlxTypedGroup<EnemyChaser>;
+	// ENNEMY LIST
+	private var _enemyList : FlxTypedGroup<Enemy>;
 	private var _enemy : EnemyChaser;
 	private var _ennemyPosList : Array<FlxPoint>;
 	private var _enemyF : EnemyFearable;
 	
+	// ladder
+	private var _ladderList: FlxTypedGroup<FlxObject>;
 	
 	
-	//TILEMAP 
+	
+	// TILEMAP 
 	private var _map:FlxTilemap;
 	private var _mapTable:Array<FlxColor>;
 	private static inline var TILE_WIDTH:Int = 16;
 	private static inline var TILE_HEIGHT:Int = 16;
 	private var currentTileID:Int;
 	
-	//DEBUG TEXT
+	
+	
+	// DEBUG TEXT
 	private var _info:String = "Current State: {STATE} \n";
 	private var _accX:String = "Acceleration X: {ACCX} \n";
 	private var _accY:String = "Acceleration Y: {ACCY} \n";
@@ -68,6 +74,7 @@ class PlayState extends FlxState
 	
 	private var _txtInfo:FlxText;
 	private var _editModeTxt:FlxText;
+	private var _EnemyInfo:FlxText;
 	
 	
 	//CAMERA SYSTEM
@@ -79,11 +86,12 @@ class PlayState extends FlxState
 	private var bloodLight: FlxSprite;
 	private var enemyBloodLight: FlxSprite;
 	private var lightingSystem: Lighting;
+	private var lightingSystem2: Lighting;
 	private var lightingSystemBB: Lighting;
 	
 	
 	
-	private var _slainableEnemies : Array<npcs.npcs_type.EnemyChaser>;
+	private var _slainableEnemies : Array<Enemy>;
 	
 	override public function create():Void
 	{
@@ -100,23 +108,28 @@ class PlayState extends FlxState
 		
 		_txtInfo = new FlxText(16, 16, -1, _info);
 		_txtInfo.color = FlxColor.YELLOW;
+		_txtInfo.visible = false;
 		
 		
 		_editModeTxt = new FlxText(150, 20, -1, "EDIT MODE");
 		_editModeTxt.color = FlxColor.GREEN;
 		_editModeTxt.visible = false;
 		
-		
+		_editMode = false;
 		
 		var playerpos = new FlxPoint(0, 0);
 		_ennemyPosList = new Array<FlxPoint>();
 	
-		_editMode = false;
+		//ladder generation
+		_ladderList = new FlxTypedGroup<FlxObject>();
 		
 		currentTileID = 1;
-		_mapTable = [FlxColor.WHITE, FlxColor.BLACK, FlxColor.BROWN, FlxColor.GRAY, FlxColor.RED, FlxColor.CYAN];
-		_map = GenerateLevel("assets/data/fullMap.png", "assets/images/tiles.png", playerpos);
-		add(_map);
+		_mapTable = [FlxColor.WHITE, FlxColor.BLACK, FlxColor.BROWN, FlxColor.PURPLE, FlxColor.RED, FlxColor.CYAN ];
+		_map = GenerateLevel("assets/data/fullMap.png", "assets/images/tiles2.png", playerpos);
+		
+		
+		
+		
 		
 		//INDISPENSABLE POUR QUE LE JEU CHARGE (FAIRE EN SORTE QU'IL SOIT PLUS GRAND QUE L'ENSEMBLE DES MAPS LOAD)
 		FlxG.worldBounds.set(0, 0, _map.width, _map.height);
@@ -124,15 +137,14 @@ class PlayState extends FlxState
 		_player = new Player(playerpos.x, playerpos.y, _map);
 		
 		//Enemy instanciation
-		_enemyList = new FlxTypedGroup<npcs.npcs_type.EnemyChaser>();
-		_enemy = new npcs.npcs_type.EnemyChaser(_ennemyPosList[0].x, _ennemyPosList[0].y, _map, _player); 
-		_enemyList.add(_enemy);
+		_enemyList = new FlxTypedGroup<Enemy>();
+		_enemy = new EnemyChaser(_ennemyPosList[0].x, _ennemyPosList[0].y, _map, _player); 
 		
 		//test de l'ennemi qui a peur ( a supprimer)
 		_enemyF = new EnemyFearable(_ennemyPosList[0].x - 20 , _ennemyPosList[0].y, _map, _player);
-		add(_enemyF);
-		add(_enemyF._debugText);
-		add(_enemyF._debugStateText);
+		_enemyList.add(_enemy);
+		//_enemyList.add(_enemyF);
+		
 		
 
 		
@@ -142,21 +154,7 @@ class PlayState extends FlxState
 		
 		
 	
-		
-		
-		add(_enemyList);
 	
-		
-		add(_player);
-		
-		add(_player.canvas);
-		add(_player.canvas2);
-		add(_player.canvas3);
-		add(_player.canvas4);
-		add(_player.canvas5);
-		add(_player.canvas6);
-		add(_player.biteHitbox);
-		
 		
 		
 		_slainableEnemies = [];
@@ -167,26 +165,35 @@ class PlayState extends FlxState
 		lightingSystem.alpha = 0.9; // or whatever
 		//lighting.blue = 20;   // for example
 		lightingSystem.color = FlxColor.BLACK;
-		add(lightingSystem);
+		
+		
 		
 		light = new FlxSprite();
-		//light.loadGraphic("assets/images/lantern.png", true, 64, 64, false);
 		light.loadGraphic("assets/images/light.png", true, 32, 128, false);
-		//light.animation.add("breath", [0,1,2], 3);
 		light.animation.add("breath", [0], 3);
 		light.animation.play("breath");
+		light.setPosition(140, 100);
 		lightingSystem.add(light);
-		light.setPosition(60, 100);
-		
 		
 		var light2 = Reflect.copy(light);
+		light2.setPosition(180, 100);
 		lightingSystem.add(light2);
-		light2.setPosition(120, 100);
 		
 		var light3 = Reflect.copy(light);
+		light3.setPosition(220, 100);
 		lightingSystem.add(light3);
-		light3.setPosition(180, 100);
 		
+		lightingSystem2 = new Lighting();
+		lightingSystem2.alpha = 0.9; // or whatever
+		//lighting.blue = 20;   // for example
+		lightingSystem2.color = FlxColor.BLACK;
+		
+		var spawnlight = new FlxSprite();
+		spawnlight.loadGraphic("assets/images/lantern.png", true, 64, 64, false);
+		spawnlight.animation.add("r", [0,2, 1],3);
+		spawnlight.animation.play("r");
+		lightingSystem.add(spawnlight);
+		spawnlight.setPosition(16, 6);
 		
 		//LIGHTING SYSTEM 2 (BLOOD BATH) // couleur R48 B3 G3 ou R69 B2 G2
 		lightingSystemBB = new Lighting();
@@ -195,7 +202,7 @@ class PlayState extends FlxState
 		lightingSystemBB.green = 2;   // for example
 		lightingSystemBB.red = 69;   // for example
 		//lightingSystemBB.color = FlxColor.RED;
-		add(lightingSystemBB);
+		
 		
 		
 		bloodLight = new FlxSprite();
@@ -211,11 +218,34 @@ class PlayState extends FlxState
 		enemyBloodLight.animation.play("breath");
 		lightingSystemBB.add(enemyBloodLight);
 		
+		
+		
+		add(_map);
+		add(_ladderList);
+		add(_enemyList);
+
+		add(_player);
+		
+		add(_player.canvas);
+		add(_player.canvas2);
+		add(_player.canvas3);
+		add(_player.canvas4);
+		add(_player.canvas5);
+		add(_player.canvas6);
+		add(_player.biteHitbox);
+		
+		add(lightingSystem);
+		//add(lightingSystem2);
+		add(lightingSystemBB);
+		
 		add(_player.visibilityIcon);
 		
 		//DEBUG VA DISPARAITRE
-		add(_enemy._debugText);
-		add(_enemy._debugStateText);
+		_EnemyInfo = _enemy._debugText;
+		//+ _enemy._debugStateText;
+		add(_EnemyInfo);
+		//add(_enemy._debugText);
+		//add(_enemy._debugStateText);
 		
 		
 		//ADD UI
@@ -247,15 +277,11 @@ class PlayState extends FlxState
 		
 		
 		// VISIBILITY SYSTEM
-		if (FlxG.overlap(_player, lightingSystem))
-		{
-			_player.visibility = 100;
-			FlxMath.distanceToPoint(_player,
-		}
-		else
+		if (!FlxG.overlap(_player, lightingSystem, LightCalculation))
 		{
 			_player.visibility = 0;
 		}
+		
 		
 		// INPUT
 		if (FlxG.mouse.pressed && _editMode)
@@ -278,7 +304,23 @@ class PlayState extends FlxState
 		if (FlxG.keys.justPressed.NUMPADZERO)
 		{
 			_txtInfo.visible = !_txtInfo.visible;
+			_EnemyInfo.visible = ! _EnemyInfo.visible ;
 		}
+		
+
+		
+		// ladder input
+		if (_player.on_ladder && !_player.grab_ladder  && FlxG.keys.justPressed.E)
+		{
+			_player.grab_ladder = true;
+			trace("LADDER GRAB");
+		}
+		else if (_player.grab_ladder && (FlxG.keys.justPressed.E || !_player.on_ladder))
+		{
+			_player.grab_ladder = false;
+		}
+		
+		
 		
 		// C'est degeu mais c'est que du debug
 		_editModeTxt.setPosition(this.camera.scroll.x + 150, this.camera.scroll.y + 20);
@@ -311,7 +353,16 @@ class PlayState extends FlxState
 		//Mettre en place un systeme pour que chaque enemy de la liste puisse add son particule emitter
 		FlxG.collide(_enemy._particleEmitter, _map, disableVelocity);
 		
-
+		
+		if (FlxG.overlap(_player, _ladderList))
+		{
+			_player.on_ladder = true;
+			//trace("LADDER");
+			//_player.acceleration.y = 0;
+		} else {
+			_player.on_ladder = false;
+			_player.acceleration.y = _player.GRAVITY; 
+		}
 		
 		_slainableEnemies = [];
 		
@@ -326,22 +377,32 @@ class PlayState extends FlxState
 			}
 		}
 		
-		if (FlxG.keys.justPressed.E) {
-			for (enemy in _slainableEnemies) {
-				add(enemy._particleEmitter);
-				enemy.kill();	
-			}
-		}
-		
-		
 		if (!FlxG.overlap(_player.biteHitbox, _enemyF, EnemySlainable))
 		{
 			_actionText.visible = false;
 		}
 		
 		
+		if (FlxG.keys.justPressed.E) {
+			for (enemy in _slainableEnemies) {
+				
+				add(enemy._particleEmitter);
+				enemy.kill();	
+			}
+		}
+		
+		
+		
+		
 		super.update(elapsed);
 	}
+	
+	
+	public function ladderOverlap(player:FlxObject) : Bool
+	{
+		return true;
+	}
+	
 	
 	////CALLBACK OVERLAP CONTIENT UN INPUT A MODIFIER 
 	//public function CanSlain(owner:Player,enemy:Enemy)
@@ -356,6 +417,33 @@ class PlayState extends FlxState
 			//enemy.kill();	
 		//}
 	//}
+	
+	public function LightCalculation(player:Player,light:FlxSprite)
+	{
+		
+
+		var checkPoint = new FlxPoint(light.getMidpoint().x, player.getMidpoint().y);
+		var playerMidPoint = new FlxPoint(player.getMidpoint().x, player.getMidpoint().y);
+		var yolo = Math.sqrt((checkPoint.x - playerMidPoint.x) * (checkPoint.x - playerMidPoint.x)  + (checkPoint.y - playerMidPoint.y) *(checkPoint.y - playerMidPoint.y));
+		if (yolo > 25)
+		{
+			
+		}
+		if (yolo > 20)
+		{
+			_player.visibility = 25;
+		}
+		else if (yolo < 20 && yolo > 16)
+		{
+			_player.visibility = 50;
+		}
+		else if (yolo <= 16)
+		{
+			_player.visibility = 100;
+		}
+	
+	}
+	
 	
 	//Pour les particules mais à supprimer
 	public function disableVelocity(part:FlxEmitter,map:FlxObject)
@@ -394,13 +482,38 @@ class PlayState extends FlxState
 		
 		//var mapTable = [FlxColor.WHITE, FlxColor.BLACK, FlxColor.BROWN, FlxColor.GRAY, FlxColor.RED];
 		var map = new FlxTilemap();
-		
+	
 		//VERSION  WITHOUT AUTO TILES
 		map.loadMapFromGraphic(imageMapPath, false, 1, _mapTable, imageTilePath, 16, 16);
 		
 		//VERSION AVEC AUTO TILES
 		//map.loadMapFromGraphic(imageMapPath, false, 1, _mapTable, imageTilePath, 16, 16, AUTO);
 		
+		// No collision on ladder actually
+		map.setTileProperties(3, FlxObject.NONE);
+		
+		var ar:Array<Int> = map.getTileInstances(3);
+		var posArray:Array<FlxPoint> = new Array<FlxPoint>();
+		for (a in ar)
+		{
+			map.getTileByIndex(a);
+			var pos = map.getTileCoordsByIndex(a);
+			posArray.push(pos);
+		}
+		
+		posArray.sort(function(a, b): Int {
+			if (a.y < b.y) return -1;
+			else if (a.y > b.y) return 1;
+			return 0;
+		});
+		
+		trace(posArray.toString());
+		
+		var obj:FlxObject = new FlxObject(posArray[0].x-8, posArray[0].y-8, 16, (posArray[posArray.length-1].y-posArray[0].y + 16));
+		_ladderList.add(obj);
+		
+		
+	
 		trace("LVL WIDTH : " + map.widthInTiles);
 		trace("LVL HEIGHT : " + map.heightInTiles);
 		

@@ -10,5 +10,6 @@ class BloodBathFinish extends FlxFSMState<Player>
 		trace("STATE : BLOODBATH FINISH");
 		owner.animation.play("bloodBathOut");
 		owner.velocity.x = 0;
+		owner.visibilityIcon.visible = true;
 	}
 }

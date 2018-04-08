@@ -9,6 +9,7 @@ import flixel.math.FlxPoint;
 import flixel.text.FlxText;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxColor;
+import player.states.Ladder;
 import source.player.states.*;
 import source.player.Conditions;
 
@@ -34,6 +35,8 @@ class Player extends FlxSprite
 	public var is_sliding 	: Bool = false;
 	public var is_climbing 	: Bool = false;
 	public var is_bathing 	: Bool = false;
+	public var on_ladder 	: Bool = false;
+	public var grab_ladder 	: Bool = false;
 	
 	public var visibility : Int = 0;
 	
@@ -114,7 +117,7 @@ class Player extends FlxSprite
 		super(X, Y);
 		_map = map;
 		
-		visibilityIcon = new VisibilityIcon(camera.width - 50, 50);
+		visibilityIcon = new VisibilityIcon(camera.width - 50 + camera.scroll.x, 50 + camera.scroll.y);
 		
 		
 		
@@ -189,6 +192,7 @@ class Player extends FlxSprite
 			.add(Walk, Dash, Conditions.dash)
 			.add(Walk, Fall, Conditions.fall)
 			.add(Walk, Climb, Conditions.climb)
+			.add(Walk, Ladder, Conditions.ladder)
 			
 			.add(Jump, Walk, Conditions.grounded)
 			//peut etre creer un state wall jump
@@ -197,12 +201,19 @@ class Player extends FlxSprite
 			.add(Jump, Dash, Conditions.dash)
 			.add(Jump, Climb, Conditions.climb)
 			.add(Jump, SlideWall, Conditions.slideWall)
+			.add(Jump, Ladder, Conditions.ladder)
 			
 			.add(Fall, Walk, Conditions.grounded)
 			.add(Fall, Dash, Conditions.dash)
 			.add(Fall, Climb, Conditions.climb)
 			.add(Fall, SlideWall, Conditions.slideWall) 
 			.add(Fall, Jump, Conditions.jump)
+			.add(Fall, Ladder, Conditions.ladder)
+			
+			.add(Ladder, Walk, Conditions.leaveLadder)
+			.add(Ladder, Fall, Conditions.leaveLadder)
+			.add(Ladder, Jump, Conditions.jump)
+			
 			
 			.add(Dash, Walk, Conditions.grounded)
 			.add(Dash, Fall, Conditions.fall)
@@ -221,7 +232,7 @@ class Player extends FlxSprite
 			.add(SlideWall, Fall, Conditions.fallFromClimb)
 			.add(SlideWall, Jump, Conditions.jump)
 			.add(SlideWall, Climb, Conditions.climb)
-			
+		//	.add(SlideWall, Ladder, Conditions.ladder)
 			
 			.add(Walk,BloodBath,Conditions.bbIn)
 			.add(BloodBath, BloodBathFinish, Conditions.bbOut)
